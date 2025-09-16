@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vuur dat omhoog gaat (hard!)</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0; height: 100%; background: #0b0b12; color: #e8e8f0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      overflow: hidden;
+    }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    .hud {
+      position: fixed; top: 12px; left: 12px; background: rgba(0,0,0,0.4);
+      padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.4;
+      backdrop-filter: blur(6px);
+    }
+    .hud kbd {
+      background: #1b1b27; padding: 2px 6px; border-radius: 4px; border: 1px solid #2b2b3a;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px;
+    }
+    .bottom-gradient {
+      position: fixed; inset: auto 0 0 0; height: 22vh;
+      background: linear-gradient(to top, rgba(255,130,0,0.35), rgba(255,130,0,0.0));
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="bottom-gradient"></div>
+  <div class="hud" id="hud">Laden…</div>
+
+  <script>
+  (() => {
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    let W = 0, H = 0, DPR = Math.min(2, devicePixelRatio || 1);
+
+    function resize() {
+      W = Math.floor(window.innerWidth * DPR);
+      H = Math.floor(window.innerHeight * DPR);
+      canvas.width = W; canvas.height = H;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+    }
+    window.addEventListener('resize', resize, { passive: true });
+    resize();
+
+    // Alleen jouw geüploade plaatje
+    const SPRITE_URLS = [
+      /* Zet hier het pad/URL naar je geüploade afbeelding neer */
+      'image_uit_upload.jpeg'
+    ];
+
+    function loadImages(urls) {
+      return Promise.all(urls.map(url => new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = rej;
+        img.src = url;
+      })));
+    }
+
+    const params = {
+      autoSpawn: true,
+      spawnRate: 90,
+      speedMin: 420,
+      speedMax: 820,
+      swayAmp: 26,
+      swayFreq: 2.2,
+      scaleMin: 0.18,
+      scaleMax: 0.55,
+      lifeMs: 60000,
+      glitchMsMin: 140,
+      glitchMsMax: 360,
+      maxParticles: 1400,
+      friction: 0.02,
+      gravityUp: -40,
+      drag: 0.0008,
+      bloom: true,
+    };
+
+    const input = { mouseX: 0, mouseY: 0, mouseDown: false };
+    window.addEventListener('mousemove', e => {
+      input.mouseX = e.clientX * DPR;
+      input.mouseY = e.clientY * DPR;
+    }, { passive: true });
+    window.addEventListener('mousedown', () => input.mouseDown = true);
+    window.addEventListener('mouseup',   () => input.mouseDown = false);
+
+    const hud = document.getElementById('hud');
+    let showHelp = true;
+    function renderHUD(fps, count) {
+      const help = showHelp ? `
+        <div><b>Besturing</b></div>
+        <div>• <kbd>H</kbd> help aan/uit — <kbd>Space</kbd> auto-spawn aan/uit</div>
+        <div>• <kbd>↑</kbd>/<kbd>↓</kbd> snelheid — <kbd>←</kbd>/<kbd>→</kbd> spawnrate</div>
+        <div>• Muis ingedrukt bij de onderrand spawnt extra vuur lokaal</div>
+        <div style="height:6px"></div>` : '';
+      hud.innerHTML = `
+        ${help}
+        <div><b>Status</b></div>
+        <div><b>FPS:</b> ${fps.toFixed(0)} — <b>Deeltjes:</b> ${count}</div>
+        <div><b>Spawn:</b> ${params.autoSpawn ? 'auto' : 'uit'} @ ${params.spawnRate}/s</div>
+        <div><b>Speed:</b> ${params.speedMin}-${params.speedMax} px/s — <b>Life:</b> ${params.lifeMs/1000}s</div>`;
+    }
+    window.addEventListener('keydown', (e) => {
+      if (e.key === ' ') { params.autoSpawn = !params.autoSpawn; e.preventDefault(); }
+      if (e.key.toLowerCase() === 'h') { showHelp = !showHelp; }
+      if (e.key === 'ArrowUp')   { params.speedMin += 20; params.speedMax += 20; }
+      if (e.key === 'ArrowDown') { params.speedMin = Math.max(50, params.speedMin - 20);
+                                   params.speedMax = Math.max(params.speedMin + 50, params.speedMax - 20); }
+      if (e.key === 'ArrowRight'){ params.spawnRate = Math.min(400, params.spawnRate + 10); }
+      if (e.key === 'ArrowLeft') { params.spawnRate = Math.max(0, params.spawnRate - 10); }
+    });
+
+    const rand = (a, b) => a + Math.random() * (b - a);
+    const randInt = (a, b) => Math.floor(rand(a, b + 1));
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const nowMs = () => performance.now();
+
+    class Fire {
+      constructor(img, x, y, scale, vy, lifeMs, glitchMs) {
+        this.img = img;
+        this.x = x; this.y = y;
+        this.vx = rand(-40, 40);
+        this.vy = -Math.abs(vy);
+        this.scale = scale;
+        this.birth = nowMs();
+        this.life = lifeMs;
+        this.dead = false;
+        this.glitchEnd = this.birth + glitchMs;
+        this.rot = rand(-Math.PI, Math.PI);
+        this.rotSpeed = rand(-0.8, 0.8);
+        this.swaySeed = rand(0, 1000);
+        this.alpha = rand(0.85, 1.0);
+      }
+      update(dt) {
+        const t = (nowMs() - this.birth);
+        const drag = 1 - (params.drag * dt);
+        this.vx *= drag;
+        this.vy = this.vy * drag + (params.gravityUp * dt);
+        const sway = Math.sin((this.swaySeed + t * 0.001 * params.swayFreq * 2 * Math.PI)) * params.swayAmp;
+        const targetX = (this.x + sway);
+        this.vx += clamp((targetX - this.x) * 0.02, -80, 80);
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.rot += this.rotSpeed * dt;
+        this.rotSpeed *= (1 - params.friction * dt);
+        if (nowMs() < this.glitchEnd) {
+          this.alpha = clamp(this.alpha + rand(-0.25, 0.25), 0.55, 1);
+        } else {
+          const lifeRatio = 1 - (t / this.life);
+          this.alpha = clamp(0.6 + lifeRatio * 0.4, 0.35, 0.95);
+        }
+        if (t >= this.life || this.y + 200 < -200) this.dead = true;
+      }
+      draw(ctx) {
+        if (!this.img) return;
+        const w = this.img.naturalWidth || this.img.width;
+        const h = this.img.naturalHeight || this.img.height;
+        const s = this.scale * DPR;
+        let jitterX = 0, jitterY = 0, jitterR = 0, jitterS = 0;
+        if (nowMs() < this.glitchEnd) {
+          jitterX = rand(-12, 12) * DPR;
+          jitterY = rand(-10, 6) * DPR
