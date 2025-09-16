@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Vuur!</title>
+  <title>Gamehub</title>
   <style>
     html, body {
       margin: 0; padding: 0; height: 100%; background: #0b0b12; color: #e8e8f0;
@@ -51,14 +51,15 @@
     window.addEventListener('resize', resize, { passive: true });
     resize();
 
-    // Alleen jouw lokale vuurplaatje
+    // Vuurplaatje vanaf GitHub raw-link
     const SPRITE_URLS = [
-      'Vuur.png'
+      'https://raw.githubusercontent.com/Jimisdebest/fire/7874a6c09c2bcaaf5a4c042145f97cd81bb1b439/Vuur.png'
     ];
 
     function loadImages(urls) {
       return Promise.all(urls.map(url => new Promise((res, rej) => {
         const img = new Image();
+        img.crossOrigin = 'anonymous';
         img.onload = () => res(img);
         img.onerror = rej;
         img.src = url;
@@ -159,9 +160,4 @@
         }
         if (t >= this.life || this.y + 200 < -200) this.dead = true;
       }
-      draw(ctx) {
-        if (!this.img) return;
-        const w = this.img.naturalWidth || this.img.width;
-        const h = this.img.naturalHeight || this.img.height;
-        const s = this.scale * DPR;
-        let jitterX = 0, jitterY = 0
+      draw(ctx)
