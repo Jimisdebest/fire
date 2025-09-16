@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Vuur dat omhoog gaat (hard!)</title>
+  <title>Vuur!</title>
   <style>
     html, body {
       margin: 0; padding: 0; height: 100%; background: #0b0b12; color: #e8e8f0;
@@ -28,7 +28,6 @@
   </style>
 </head>
 <body>
-  <!-- Canvas voor het vuur -->
   <canvas id="c"></canvas>
   <div class="bottom-gradient"></div>
   <div class="hud" id="hud">Laden…</div>
@@ -69,8 +68,8 @@
     const params = {
       autoSpawn: true,
       spawnRate: 90,
-      speedMin: 420,
-      speedMax: 820,
+      speedMin: 900,   // sneller omhoog
+      speedMax: 1400,  // sneller omhoog
       swayAmp: 26,
       swayFreq: 2.2,
       scaleMin: 0.18,
@@ -162,3 +161,7 @@
       }
       draw(ctx) {
         if (!this.img) return;
+        const w = this.img.naturalWidth || this.img.width;
+        const h = this.img.naturalHeight || this.img.height;
+        const s = this.scale * DPR;
+        let jitterX = 0, jitterY = 0
