@@ -28,9 +28,13 @@
   </style>
 </head>
 <body>
+  <!-- Canvas voor het vuur -->
   <canvas id="c"></canvas>
   <div class="bottom-gradient"></div>
   <div class="hud" id="hud">Laden…</div>
+
+  <!-- Vuurgeluid -->
+  <audio id="fireSound" src="Vuurgeluid.mp3" autoplay loop></audio>
 
   <script>
   (() => {
@@ -48,10 +52,9 @@
     window.addEventListener('resize', resize, { passive: true });
     resize();
 
-    // Alleen jouw geüploade plaatje
+    // Alleen jouw lokale vuurplaatje
     const SPRITE_URLS = [
-      /* Zet hier het pad/URL naar je geüploade afbeelding neer */
-      'image_uit_upload.jpeg'
+      'Vuur.png'
     ];
 
     function loadImages(urls) {
@@ -159,10 +162,3 @@
       }
       draw(ctx) {
         if (!this.img) return;
-        const w = this.img.naturalWidth || this.img.width;
-        const h = this.img.naturalHeight || this.img.height;
-        const s = this.scale * DPR;
-        let jitterX = 0, jitterY = 0, jitterR = 0, jitterS = 0;
-        if (nowMs() < this.glitchEnd) {
-          jitterX = rand(-12, 12) * DPR;
-          jitterY = rand(-10, 6) * DPR
