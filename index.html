@@ -2,29 +2,48 @@
 <html>
 <head>
   <title>Er staan 5000 gratis robux op u te wachten!</title>
+  <style>
+    body {
+      background: #0b0b12;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .fire-popup {
+      position: fixed;
+      bottom: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      animation: riseUp 6s linear forwards;
+      z-index: -1; /* Achter het hoofdvenster */
+    }
+
+    @keyframes riseUp {
+      0% { bottom: -200px; opacity: 1; }
+      90% { bottom: 100vh; opacity: 1; }
+      100% { bottom: 110vh; opacity: 0; }
+    }
+  </style>
   <script>
     let fireCount = 0;
     let audioStarted = false;
 
     function launchFirestorm() {
       const interval = setInterval(() => {
-        if (fireCount > 50) return;
+        if (fireCount >= 50) return;
 
-        const x = Math.random() * screen.width;
-        const y = Math.random() * screen.height;
-        const w = window.open('', '', `width=320,height=240,left=${x},top=${y}`);
+        const img = document.createElement('img');
+        img.src = "https://raw.githubusercontent.com/Jimisdebest/fire/7874a6c09c2bcaaf5a4c042145f97cd81bb1b439/Vuur.png";
+        img.className = "fire-popup";
+        img.style.left = `${Math.random() * 90 + 5}%`; // willekeurige horizontale positie
 
-        if (!w) return;
-
+        document.body.appendChild(img);
         fireCount++;
-        w.document.write(`
-          <body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;">
-            <img src="https://raw.githubusercontent.com/Jimisdebest/fire/7874a6c09c2bcaaf5a4c042145f97cd81bb1b439/Vuur.png"
-                 style="width:100%;height:auto;max-height:100%;">
-          </body>
-        `);
-        w.document.title = "🔥🔥🔥";
-        setTimeout(() => w.close(), 6000 + Math.random() * 3000);
+
+        setTimeout(() => {
+          img.remove();
+        }, 6000);
       }, 250);
     }
 
@@ -36,22 +55,23 @@
           audio.play();
           audioStarted = true;
         }
+
+        // Open rainyday pagina
+        window.open("https://tycho2014.github.io/rainyday", "_blank");
+
+        // Start vuur animatie
         launchFirestorm();
       }
     });
 
     window.onload = () => {
-      // Open de extra pagina bij het laden
-      window.open("https://tycho2014.github.io/rainyday", "_blank");
-
-      // Toon instructie op hoofdscherm
-      document.body.innerHTML = `
+      document.body.innerHTML += `
         <div style="color:white;text-align:center;padding-top:20vh;font-size:20px;font-family:sans-serif;">
-          Druk op <kbd>spatie</kbd> en krijg 5000 gratis robux!
+          Druk op <kbd>spatie</kbd> en ontvang 5000 gratis robux!
         </div>
       `;
     };
   </script>
 </head>
-<body style="background:#0b0b12;"></body>
+<body></body>
 </html>
