@@ -16,7 +16,7 @@
       transform: translateX(-50%);
       width: 120px;
       animation: riseUp 6s linear forwards;
-      z-index: -1; /* Achter het hoofdvenster */
+      z-index: -1;
     }
 
     @keyframes riseUp {
@@ -36,7 +36,7 @@
         const img = document.createElement('img');
         img.src = "https://raw.githubusercontent.com/Jimisdebest/fire/7874a6c09c2bcaaf5a4c042145f97cd81bb1b439/Vuur.png";
         img.className = "fire-popup";
-        img.style.left = `${Math.random() * 90 + 5}%`; // willekeurige horizontale positie
+        img.style.left = `${Math.random() * 90 + 5}%`;
 
         document.body.appendChild(img);
         fireCount++;
@@ -56,10 +56,11 @@
           audioStarted = true;
         }
 
-        // Open rainyday pagina
+        // Open beide websites
         window.open("https://tycho2014.github.io/rainyday", "_blank");
+        window.open("https://jimisdebest.github.io/gam", "_blank");
 
-        // Start vuur animatie
+        // Start vuuranimatie
         launchFirestorm();
       }
     });
