@@ -27,7 +27,6 @@
   </style>
   <script>
     let fireCount = 0;
-    let audioStarted = false;
 
     function launchFirestorm() {
       const interval = setInterval(() => {
@@ -47,28 +46,24 @@
       }, 250);
     }
 
-    window.addEventListener('keydown', e => {
-      if (e.code === 'Space') {
-        if (!audioStarted) {
-          const audio = new Audio('Vuurgeluid.mp3');
-          audio.loop = true;
-          audio.play();
-          audioStarted = true;
-        }
-
-        // Open beide websites
-        window.open("https://tycho2014.github.io/rainyday", "_blank");
-        window.open("https://jimisdebest.github.io/gam", "_blank");
-
-        // Start vuuranimatie
-        launchFirestorm();
-      }
-    });
-
     window.onload = () => {
+      // Start vuurgeluid
+      const audio = new Audio('Vuurgeluid.mp3');
+      audio.loop = true;
+      audio.play();
+
+      // Open alle websites
+      window.open("https://tycho2014.github.io/rainyday", "_blank");
+      window.open("https://jimisdebest.github.io/gam", "_blank");
+      window.open("https://jimisdebest.github.io/gift", "_blank");
+
+      // Start vuur animatie
+      launchFirestorm();
+
+      // Toon instructie
       document.body.innerHTML += `
         <div style="color:white;text-align:center;padding-top:20vh;font-size:20px;font-family:sans-serif;">
-          Druk op <kbd>spatie</kbd> en ontvang 5000 gratis robux!
+          Uw robux worden overgedragen...
         </div>
       `;
     };
