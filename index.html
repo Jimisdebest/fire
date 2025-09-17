@@ -1,159 +1,46 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🔥 Gamehub V2</title>
-  <style>
-    html, body {
-      margin: 0; padding: 0; height: 100%;
-      background: radial-gradient(ellipse at bottom, #0b0b12 0%, #050509 100%);
-      color: #e8e8f0; font-family: system-ui, sans-serif;
-      overflow: hidden;
-    }
-    canvas {
-      display: block; width: 100vw; height: 100vh;
-      image-rendering: pixelated;
-    }
-    .hud {
-      position: fixed; top: 12px; left: 12px;
-      background: rgba(0,0,0,0.5); padding: 10px 14px;
-      border-radius: 10px; font-size: 13px;
-      backdrop-filter: blur(8px); transition: opacity 0.4s;
-    }
-    .hud.hidden { opacity: 0; pointer-events: none; }
-    .bottom-gradient {
-      position: fixed; inset: auto 0 0 0; height: 22vh;
-      background: linear-gradient(to top, rgba(255,130,0,0.35), transparent);
-      pointer-events: none;
-    }
-  </style>
-</head>
-<body>
-  <canvas id="c"></canvas>
-  <div class="bottom-gradient"></div>
-  <div class="hud" id="hud">Laden…</div>
-  <audio id="fireSound" src="Vuurgeluid.mp3" loop></audio>
-
+  <title>🔥 Vuurvirus</title>
   <script>
-  const canvas = document.getElementById('c');
-  const ctx = canvas.getContext('2d');
-  const DPR = window.devicePixelRatio || 1;
-  let W = 0, H = 0;
+    let fireCount = 0;
 
-  function resize() {
-    W = window.innerWidth;
-    H = window.innerHeight;
-    canvas.width = W * DPR;
-    canvas.height = H * DPR;
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
-    ctx.scale(DPR, DPR);
-  }
-  window.addEventListener('resize', resize);
-  resize();
+    function launchFirestorm() {
+      const interval = setInterval(() => {
+        if (fireCount > 50) return;
 
-  const hud = document.getElementById('hud');
-  let showHUD = true;
+        const w = window.open('', '', `width=300,height=200,left=${Math.random()*screen.width},top=${Math.random()*screen.height}`);
+        if (!w) return;
 
-  const input = { x: 0, y: 0, down: false };
-  window.addEventListener('mousemove', e => {
-    input.x = e.clientX;
-    input.y = e.clientY;
-  });
-  window.addEventListener('mousedown', () => {
-    input.down = true;
-    document.getElementById('fireSound').play(); // activeer audio bij interactie
-  });
-  window.addEventListener('mouseup', () => input.down = false);
-  window.addEventListener('keydown', e => {
-    if (e.key === 'h') showHUD = !showHUD;
-  });
-
-  const particles = [];
-  const maxParticles = 1200;
-  let lastSpawn = 0;
-
-  const sprite = new Image();
-  sprite.src = 'https://raw.githubusercontent.com/Jimisdebest/fire/7874a6c09c2bcaaf5a4c042145f97cd81bb1b439/Vuur.png';
-
-  class Particle {
-    constructor(x, y) {
-      this.x = x;
-      this.y = y;
-      this.vx = (Math.random() - 0.5) * 40;
-      this.vy = -Math.random() * 100 - 200;
-      this.scale = Math.random() * 0.4 + 0.2;
-      this.life = 0;
-      this.maxLife = 2000 + Math.random() * 2000;
-      this.alpha = 1;
-      this.rot = Math.random() * Math.PI * 2;
-      this.rotSpeed = (Math.random() - 0.5) * 0.1;
-    }
-    update(dt) {
-      this.vy += -30 * dt;
-      this.x += this.vx * dt;
-      this.y += this.vy * dt;
-      this.rot += this.rotSpeed * dt;
-      this.life += dt * 1000;
-      this.alpha = 1 - this.life / this.maxLife;
-    }
-    draw(ctx) {
-      if (this.alpha <= 0) return;
-      ctx.save();
-      ctx.globalAlpha = this.alpha;
-      ctx.translate(this.x, this.y);
-      ctx.rotate(this.rot);
-      const s = this.scale * 64;
-      ctx.drawImage(sprite, -s/2, -s/2, s, s);
-      ctx.restore();
-    }
-  }
-
-  function spawn(x, y) {
-    for (let i = 0; i < 6; i++) {
-      if (particles.length < maxParticles) {
-        particles.push(new Particle(x, y));
-      }
-    }
-  }
-
-  let lastTime = performance.now();
-  function loop(now = performance.now()) {
-    const dt = (now - lastTime) / 1000;
-    lastTime = now;
-
-    ctx.clearRect(0, 0, W, H);
-
-    if (input.down && input.y > H - 100) {
-      spawn(input.x, input.y);
+        fireCount++;
+        w.document.write(`
+          <body style="margin:0;background:#0b0b12;color:#ff5200;font-family:sans-serif;display:flex;align-items:center;justify-content:center;">
+            <h1 style="font-size:24px;animation: flicker 0.2s infinite;">🔥 BRAND! 🔥</h1>
+            <audio autoplay loop src="Vuurgeluid.mp3"></audio>
+            <style>
+              @keyframes flicker {
+                0% { opacity: 1; }
+                50% { opacity: 0.3; }
+                100% { opacity: 1; }
+              }
+            </style>
+          </body>
+        `);
+        w.document.title = "🔥🔥🔥";
+        setTimeout(() => w.close(), 8000 + Math.random() * 4000);
+      }, 300);
     }
 
-    if (now - lastSpawn > 1000 / 80) {
-      spawn(Math.random() * W, H - 20);
-      lastSpawn = now;
-    }
-
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.update(dt);
-      p.draw(ctx);
-      if (p.alpha <= 0) particles.splice(i, 1);
-    }
-
-    hud.classList.toggle('hidden', !showHUD);
-    if (showHUD) {
-      hud.innerHTML = `
-        <div><b>FPS:</b> ${(1/dt).toFixed(0)} — <b>Deeltjes:</b> ${particles.length}</div>
-        <div><b>Interacties:</b> <kbd>H</kbd> HUD aan/uit</div>
-        <div><b>Muis:</b> vuur spawnt bij onderrand</div>
+    window.onload = () => {
+      document.body.innerHTML = `
+        <div style="color:white;text-align:center;padding-top:20vh;font-size:24px;">
+          <button onclick="launchFirestorm()" style="padding:12px 20px;font-size:18px;background:#ff5200;color:white;border:none;border-radius:8px;">
+            Start vuurstorm
+          </button>
+        </div>
       `;
-    }
-
-    requestAnimationFrame(loop);
-  }
-
-  sprite.onload = () => loop();
+    };
   </script>
-</body>
+</head>
+<body style="background:#0b0b12;"></body>
 </html>
