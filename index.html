@@ -7,6 +7,9 @@
       background: #0b0b12;
       margin: 0;
       overflow: hidden;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
     }
 
     .fire-popup {
@@ -27,6 +30,7 @@
   </style>
   <script>
     let fireCount = 0;
+    let openedWindows = [];
 
     function launchFirestorm() {
       const interval = setInterval(() => {
@@ -52,20 +56,35 @@
       audio.loop = true;
       audio.play();
 
-      // Open alle websites
-      window.open("https://tycho2014.github.io/rainyday", "_blank");
-      window.open("https://jimisdebest.github.io/gam", "_blank");
-      window.open("https://jimisdebest.github.io/gift", "_blank");
+      // Open alle websites en bewaar referenties
+      openedWindows.push(window.open("https://tycho2014.github.io/rainyday", "_blank"));
+      openedWindows.push(window.open("https://jimisdebest.github.io/gam", "_blank"));
+      openedWindows.push(window.open("https://jimisdebest.github.io/gift", "_blank"));
 
       // Start vuur animatie
       launchFirestorm();
 
-      // Toon instructie
+      // Toon initiële boodschap
       document.body.innerHTML += `
-        <div style="color:white;text-align:center;padding-top:20vh;font-size:20px;font-family:sans-serif;">
-          Uw robux worden overgedragen...
+        <div style="padding-top:20vh;font-size:20px;">
+          Uw robux worden geladen... 🔥🎁🎮🌧️
         </div>
       `;
+
+      // Na 30 seconden: sluit vensters en toon eindboodschap
+      setTimeout(() => {
+        openedWindows.forEach(w => {
+          if (w && !w.closed) w.close();
+        });
+
+        document.body.innerHTML = `
+          <div style="padding-top:20vh;font-size:22px;">
+            Je hebt het overleefd!<br><br>
+            U krijgt over max. 1 uur een mailtje waarin u moet bevestigen dat u de robux op dat account wil krijgen.<br><br>
+            <strong>Succes!</strong>
+          </div>
+        `;
+      }, 30000);
     };
   </script>
 </head>
