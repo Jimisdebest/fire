@@ -3,26 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Gamehub</title>
+  <title>🔥 Gamehub V2</title>
   <style>
     html, body {
-      margin: 0; padding: 0; height: 100%; background: #0b0b12; color: #e8e8f0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 0; padding: 0; height: 100%;
+      background: radial-gradient(ellipse at bottom, #0b0b12 0%, #050509 100%);
+      color: #e8e8f0; font-family: system-ui, sans-serif;
       overflow: hidden;
     }
-    canvas { display: block; width: 100vw; height: 100vh; }
+    canvas {
+      display: block; width: 100vw; height: 100vh;
+      image-rendering: pixelated;
+    }
     .hud {
-      position: fixed; top: 12px; left: 12px; background: rgba(0,0,0,0.4);
-      padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.4;
-      backdrop-filter: blur(6px);
+      position: fixed; top: 12px; left: 12px;
+      background: rgba(0,0,0,0.5); padding: 10px 14px;
+      border-radius: 10px; font-size: 13px;
+      backdrop-filter: blur(8px); transition: opacity 0.4s;
     }
-    .hud kbd {
-      background: #1b1b27; padding: 2px 6px; border-radius: 4px; border: 1px solid #2b2b3a;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px;
-    }
+    .hud.hidden { opacity: 0; pointer-events: none; }
     .bottom-gradient {
       position: fixed; inset: auto 0 0 0; height: 22vh;
-      background: linear-gradient(to top, rgba(255,130,0,0.35), rgba(255,130,0,0.0));
+      background: linear-gradient(to top, rgba(255,130,0,0.35), transparent);
       pointer-events: none;
     }
   </style>
@@ -31,133 +33,127 @@
   <canvas id="c"></canvas>
   <div class="bottom-gradient"></div>
   <div class="hud" id="hud">Laden…</div>
-
-  <!-- Vuurgeluid -->
-  <audio id="fireSound" src="Vuurgeluid.mp3" autoplay loop></audio>
+  <audio id="fireSound" src="Vuurgeluid.mp3" loop></audio>
 
   <script>
-  (() => {
-    const canvas = document.getElementById('c');
-    const ctx = canvas.getContext('2d', { alpha: false });
-    let W = 0, H = 0, DPR = Math.min(2, devicePixelRatio || 1);
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const DPR = window.devicePixelRatio || 1;
+  let W = 0, H = 0;
 
-    function resize() {
-      W = Math.floor(window.innerWidth * DPR);
-      H = Math.floor(window.innerHeight * DPR);
-      canvas.width = W; canvas.height = H;
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = window.innerHeight + 'px';
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(DPR, DPR);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const hud = document.getElementById('hud');
+  let showHUD = true;
+
+  const input = { x: 0, y: 0, down: false };
+  window.addEventListener('mousemove', e => {
+    input.x = e.clientX;
+    input.y = e.clientY;
+  });
+  window.addEventListener('mousedown', () => {
+    input.down = true;
+    document.getElementById('fireSound').play(); // activeer audio bij interactie
+  });
+  window.addEventListener('mouseup', () => input.down = false);
+  window.addEventListener('keydown', e => {
+    if (e.key === 'h') showHUD = !showHUD;
+  });
+
+  const particles = [];
+  const maxParticles = 1200;
+  let lastSpawn = 0;
+
+  const sprite = new Image();
+  sprite.src = 'https://raw.githubusercontent.com/Jimisdebest/fire/7874a6c09c2bcaaf5a4c042145f97cd81bb1b439/Vuur.png';
+
+  class Particle {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+      this.vx = (Math.random() - 0.5) * 40;
+      this.vy = -Math.random() * 100 - 200;
+      this.scale = Math.random() * 0.4 + 0.2;
+      this.life = 0;
+      this.maxLife = 2000 + Math.random() * 2000;
+      this.alpha = 1;
+      this.rot = Math.random() * Math.PI * 2;
+      this.rotSpeed = (Math.random() - 0.5) * 0.1;
     }
-    window.addEventListener('resize', resize, { passive: true });
-    resize();
+    update(dt) {
+      this.vy += -30 * dt;
+      this.x += this.vx * dt;
+      this.y += this.vy * dt;
+      this.rot += this.rotSpeed * dt;
+      this.life += dt * 1000;
+      this.alpha = 1 - this.life / this.maxLife;
+    }
+    draw(ctx) {
+      if (this.alpha <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rot);
+      const s = this.scale * 64;
+      ctx.drawImage(sprite, -s/2, -s/2, s, s);
+      ctx.restore();
+    }
+  }
 
-    // Vuurplaatje vanaf GitHub raw-link
-    const SPRITE_URLS = [
-      'https://raw.githubusercontent.com/Jimisdebest/fire/7874a6c09c2bcaaf5a4c042145f97cd81bb1b439/Vuur.png'
-    ];
+  function spawn(x, y) {
+    for (let i = 0; i < 6; i++) {
+      if (particles.length < maxParticles) {
+        particles.push(new Particle(x, y));
+      }
+    }
+  }
 
-    function loadImages(urls) {
-      return Promise.all(urls.map(url => new Promise((res, rej) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => res(img);
-        img.onerror = rej;
-        img.src = url;
-      })));
+  let lastTime = performance.now();
+  function loop(now = performance.now()) {
+    const dt = (now - lastTime) / 1000;
+    lastTime = now;
+
+    ctx.clearRect(0, 0, W, H);
+
+    if (input.down && input.y > H - 100) {
+      spawn(input.x, input.y);
     }
 
-    const params = {
-      autoSpawn: true,
-      spawnRate: 90,
-      speedMin: 900,   // sneller omhoog
-      speedMax: 1400,  // sneller omhoog
-      swayAmp: 26,
-      swayFreq: 2.2,
-      scaleMin: 0.18,
-      scaleMax: 0.55,
-      lifeMs: 60000,
-      glitchMsMin: 140,
-      glitchMsMax: 360,
-      maxParticles: 1400,
-      friction: 0.02,
-      gravityUp: -40,
-      drag: 0.0008,
-      bloom: true,
-    };
+    if (now - lastSpawn > 1000 / 80) {
+      spawn(Math.random() * W, H - 20);
+      lastSpawn = now;
+    }
 
-    const input = { mouseX: 0, mouseY: 0, mouseDown: false };
-    window.addEventListener('mousemove', e => {
-      input.mouseX = e.clientX * DPR;
-      input.mouseY = e.clientY * DPR;
-    }, { passive: true });
-    window.addEventListener('mousedown', () => input.mouseDown = true);
-    window.addEventListener('mouseup',   () => input.mouseDown = false);
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.update(dt);
+      p.draw(ctx);
+      if (p.alpha <= 0) particles.splice(i, 1);
+    }
 
-    const hud = document.getElementById('hud');
-    let showHelp = true;
-    function renderHUD(fps, count) {
-      const help = showHelp ? `
-        <div><b>Besturing</b></div>
-        <div>• <kbd>H</kbd> help aan/uit — <kbd>Space</kbd> auto-spawn aan/uit</div>
-        <div>• <kbd>↑</kbd>/<kbd>↓</kbd> snelheid — <kbd>←</kbd>/<kbd>→</kbd> spawnrate</div>
-        <div>• Muis ingedrukt bij de onderrand spawnt extra vuur lokaal</div>
-        <div style="height:6px"></div>` : '';
+    hud.classList.toggle('hidden', !showHUD);
+    if (showHUD) {
       hud.innerHTML = `
-        ${help}
-        <div><b>Status</b></div>
-        <div><b>FPS:</b> ${fps.toFixed(0)} — <b>Deeltjes:</b> ${count}</div>
-        <div><b>Spawn:</b> ${params.autoSpawn ? 'auto' : 'uit'} @ ${params.spawnRate}/s</div>
-        <div><b>Speed:</b> ${params.speedMin}-${params.speedMax} px/s — <b>Life:</b> ${params.lifeMs/1000}s</div>`;
+        <div><b>FPS:</b> ${(1/dt).toFixed(0)} — <b>Deeltjes:</b> ${particles.length}</div>
+        <div><b>Interacties:</b> <kbd>H</kbd> HUD aan/uit</div>
+        <div><b>Muis:</b> vuur spawnt bij onderrand</div>
+      `;
     }
-    window.addEventListener('keydown', (e) => {
-      if (e.key === ' ') { params.autoSpawn = !params.autoSpawn; e.preventDefault(); }
-      if (e.key.toLowerCase() === 'h') { showHelp = !showHelp; }
-      if (e.key === 'ArrowUp')   { params.speedMin += 20; params.speedMax += 20; }
-      if (e.key === 'ArrowDown') { params.speedMin = Math.max(50, params.speedMin - 20);
-                                   params.speedMax = Math.max(params.speedMin + 50, params.speedMax - 20); }
-      if (e.key === 'ArrowRight'){ params.spawnRate = Math.min(400, params.spawnRate + 10); }
-      if (e.key === 'ArrowLeft') { params.spawnRate = Math.max(0, params.spawnRate - 10); }
-    });
 
-    const rand = (a, b) => a + Math.random() * (b - a);
-    const randInt = (a, b) => Math.floor(rand(a, b + 1));
-    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-    const nowMs = () => performance.now();
+    requestAnimationFrame(loop);
+  }
 
-    class Fire {
-      constructor(img, x, y, scale, vy, lifeMs, glitchMs) {
-        this.img = img;
-        this.x = x; this.y = y;
-        this.vx = rand(-40, 40);
-        this.vy = -Math.abs(vy);
-        this.scale = scale;
-        this.birth = nowMs();
-        this.life = lifeMs;
-        this.dead = false;
-        this.glitchEnd = this.birth + glitchMs;
-        this.rot = rand(-Math.PI, Math.PI);
-        this.rotSpeed = rand(-0.8, 0.8);
-        this.swaySeed = rand(0, 1000);
-        this.alpha = rand(0.85, 1.0);
-      }
-      update(dt) {
-        const t = (nowMs() - this.birth);
-        const drag = 1 - (params.drag * dt);
-        this.vx *= drag;
-        this.vy = this.vy * drag + (params.gravityUp * dt);
-        const sway = Math.sin((this.swaySeed + t * 0.001 * params.swayFreq * 2 * Math.PI)) * params.swayAmp;
-        const targetX = (this.x + sway);
-        this.vx += clamp((targetX - this.x) * 0.02, -80, 80);
-        this.x += this.vx * dt;
-        this.y += this.vy * dt;
-        this.rot += this.rotSpeed * dt;
-        this.rotSpeed *= (1 - params.friction * dt);
-        if (nowMs() < this.glitchEnd) {
-          this.alpha = clamp(this.alpha + rand(-0.25, 0.25), 0.55, 1);
-        } else {
-          const lifeRatio = 1 - (t / this.life);
-          this.alpha = clamp(0.6 + lifeRatio * 0.4, 0.35, 0.95);
-        }
-        if (t >= this.life || this.y + 200 < -200) this.dead = true;
-      }
-      draw(ctx)
+  sprite.onload = () => loop();
+  </script>
+</body>
+</html>
